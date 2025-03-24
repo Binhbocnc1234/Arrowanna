@@ -1,18 +1,24 @@
 CXX = g++
-CXXFLAGS = -Wall -I src/include
-LDFLAGS = -L src/lib -lmingw32 -lSDL2main -lSDL2 
+CXXFLAGS = -Wall -I include
+LDFLAGS = -L lib -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf
 
-SRCS = Ultilities.cpp Player.cpp Projectile.cpp Wave.cpp main.cpp
-OBJS = $(SRCS:.cpp=.o)
-TARGET = game
+SRCDIR = src
+BUILDDIR = build
+BINDIR = bin
+
+SRCS = $(wildcard $(SRCDIR)/*.cpp)
+OBJS = $(patsubst $(SRCDIR)/%.cpp, $(BUILDDIR)/%.o, $(SRCS))
+TARGET = $(BINDIR)/game.exe
 
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
+	@mkdir  $(BINDIR)
 	$(CXX) $(OBJS) -o $(TARGET) $(LDFLAGS)
 
-%.o: %.cpp
+$(BUILDDIR)/%.o: $(SRCDIR)/%.cpp
+	@mkdir  $(BUILDDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -rf $(BUILDDIR) $(BINDIR)
