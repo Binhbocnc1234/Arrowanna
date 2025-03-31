@@ -11,6 +11,7 @@ public:
     ~UIManager();
     
     void render(int health, int score);
+    void renderGameOver();
 
 private:
     SDL_Renderer* renderer;

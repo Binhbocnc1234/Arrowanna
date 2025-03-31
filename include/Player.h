@@ -8,6 +8,8 @@ using namespace std;
 class Player{
 public:
     static Player *getInstance();
+    static constexpr int HURT_ANIMATION_DURATION = 500;
+    static constexpr int HURT_ANIMATION_DELAY = 100;
     
     Player(int x, int y, int health);
     void handleEvent(SDL_Event& e);
@@ -17,8 +19,11 @@ public:
 
     int health;
     GameObject gameObject;
-    GameObject shieldObject;
-    Direction shieldDir;
+    GameObject shieldObject, oldShieldObject;
+
+    Direction shieldDir, oldShieldDir; 
+    Uint32 shieldTransitionStart = 0;
+    bool isShieldTransitioning = false;
 
     // function<void<int>> OnBlocked
 private:

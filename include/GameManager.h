@@ -1,17 +1,16 @@
-#ifndef GAMEMANAGER_H
-#define GAMEMANAGER_H
 #pragma once
+#include "Ultilities.h"
 
 class GameManager{
 public:
     static GameManager *getInstance();
     GameManager();
-    // UpdateScore();
+    void Update();
+    void PlayerTurn();
     int score = 0;
-
+    bool isGameOver;
 
 private:
     static GameManager *instance;
 };
 
-#endif

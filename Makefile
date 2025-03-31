@@ -1,6 +1,6 @@
 CXX = g++
 CXXFLAGS = -Wall -I include
-LDFLAGS = -L lib -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf
+LDFLAGS = -L lib -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf -lSDL2_image
 
 SRCDIR = src
 BUILDDIR = build
@@ -13,12 +13,11 @@ TARGET = $(BINDIR)/game.exe
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	@mkdir  $(BINDIR)
 	$(CXX) $(OBJS) -o $(TARGET) $(LDFLAGS)
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.cpp
-	@mkdir  $(BUILDDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(BUILDDIR) $(BINDIR)
+	rmdir /s /q $(BUILDDIR)
+	del /q $(BINDIR)\game.exe

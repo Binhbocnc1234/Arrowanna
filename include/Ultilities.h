@@ -1,9 +1,20 @@
-#ifndef ULTI
-#define ULTI
 #pragma once
 #include <SDL2/SDL.h>
 #include <bits/stdc++.h>
+#include "TextureLoader.h"
 using namespace std;
+
+enum class Direction { LEFT, RIGHT, UP, DOWN, NONE };
+
+class GameConfig {
+public:
+    static constexpr const int SCREEN_WIDTH = 800;
+    static constexpr int SCREEN_HEIGHT = 600;
+    static constexpr int FPS = 60;
+    static constexpr bool IS_DEBUG_MODE = false;
+    static constexpr int SHIELD_ROTATION_DELAY = 200; //miliseconds
+    static SDL_Renderer* renderer;
+};
 
 template <typename T>
 class Singleton {
@@ -21,18 +32,20 @@ public:
     }
 };
 
-enum class Direction { LEFT, RIGHT, UP, DOWN, NONE };
+SDL_Point getRectCenter(const SDL_Rect &rect);
 
-class GameConfig {
-public:
-    static constexpr const int SCREEN_WIDTH = 800;
-    static constexpr int SCREEN_HEIGHT = 600;
-    static constexpr int FPS = 60;
-    static constexpr bool IS_DEBUG_MODE = false;
-    static int WAVE;
-    static SDL_Renderer* renderer;
+class ScreenShakeEffect{
+    public:
+        static SDL_Renderer* renderer;
+        static SDL_Rect camera;
+        static constexpr int screenShakeDuration = 100;
+        static constexpr int screenShakeIntensity = 2;
+        static bool isShaking;
+        static void StartScreenShake();
+        static void UpdateScreenShake();
+        static Uint32 screenShakeStartTime;
 };
-
+    
 struct Vector {
     float x = 0, y = 0;
 
@@ -88,8 +101,10 @@ struct GameObject{
     Vector position;
     Vector direction;
     Color color;
+    string mainTextureName;
+    vector<string> textureNameList;
     int width, height;
-
+    
     GameObject(int x, int y){
         position.x = x;
         position.y = y;
@@ -102,15 +117,24 @@ struct GameObject{
         position.y += direction.y;
     }
     void SetAttribute(int x, int y, int width, int height){
-        position.x = x;
-        position.y = y;
+        position = {x, y};
         this->width = width;
         this->height = height;
     }
     void RectRender(){
         SDL_SetRenderDrawColor(GameConfig::renderer, color.r, color.g, color.b, color.a);
+        SDL_RenderFillRect(GameConfig::renderer, GetRect());
+    }
+    void TextureRender(){
+        TextureRender(mainTextureName);
+    }
+    void TextureRender(string name){
         SDL_Rect rect = { int(position.x) - width / 2, int(position.y) - height / 2, width, height };
-        SDL_RenderFillRect(GameConfig::renderer, &rect);
+        SDL_RenderCopy(GameConfig::renderer, TextureLoader::loadTexture(name), nullptr, GetRect());
+    }
+    SDL_Rect* GetRect() {
+        SDL_Rect rect = {int(position.x) - width / 2 + ScreenShakeEffect::camera.x, int(position.y) - height / 2 + ScreenShakeEffect::camera.y, width, height};
+        return &rect;
     }
     bool IsCollide(Vector p){
         return (p.x >= position.x - width / 2 && p.x <= position.x + width / 2 &&
@@ -122,6 +146,14 @@ struct GameObject{
         return os;
     }
 };
-SDL_Point getRectCenter(const SDL_Rect &rect);
 
-#endif
+// struct SpriteRenderer{
+//     GameObject gameObject;
+//     string textureName;
+//     SpriteRenderer(GameObject gameObject) : gameObject(gameObject){
+        
+//     }
+//     void Render(){
+//         SDL_RenderCopy(GameConfig::renderer, TextureLoader::loadTexture(textureName), nullptr, gameObject.GetRect());
+//     }
+// };

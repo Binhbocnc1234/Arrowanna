@@ -14,7 +14,7 @@ public:
     void checkCollisions(int playerX, int playerY, SDL_Point shieldPoint, Direction shieldDir);
 
 private:
-    std::vector<Projectile> projectiles;
+    std::vector<Projectile*> projectiles;
     int screenWidth, screenHeight;
     int frameCount = 0;
 };
