@@ -1,5 +1,6 @@
 #include "Projectile.h"
 #include "Player.h"
+#include "Boss.h"
 #include "GameManager.h"
 #include <iostream>
 using namespace std;
@@ -7,10 +8,8 @@ using namespace std;
 Projectile::Projectile() : gameObject(0, 0), direction(Direction::UP) {}
 
 Projectile::Projectile(int startX, int startY, Direction dir, float sp, Color color, int width, int height)
-    : direction(dir), gameObject(startX, startY), speed(sp) {
+    : direction(dir), gameObject(startX, startY, width, height), speed(sp) {
     gameObject.color = color;
-    gameObject.width = width;
-    gameObject.height = height;
 }
 
 void Projectile::update() {
@@ -57,7 +56,9 @@ bool EnemyProjectile::hasHitPlayer() {
     if (ans) {
         ScreenShakeEffect::StartScreenShake();
         pl->takeDamage(static_cast<int>(direction));
+        cout << "Projectile hit Player\n";
     }
+    
     return ans;
 }
 // EnemyProjectile keeps its behavior of increasing score when Player blocks an EnemyProjectile successfully
@@ -77,8 +78,28 @@ BuffProjectile::BuffProjectile(int startX, int startY, Direction dir, float sp)
 
 bool BuffProjectile::hasHitPlayer() {
     if (Projectile::hasHitPlayer()){
-        GameManager::getInstance()->PlayerTurn();
+        Player::getInstance()->goldEnergy++;
         return true;
+    }
+    return false;
+}
+
+// PLAYER PROJECTILE
+PlayerProjectile::PlayerProjectile(int startX, int startY, float sp) : 
+    Projectile(startX, startY, Direction::UP, sp, Color(0, 0, 0, 255), 40, 40) {
+
+}
+bool PlayerProjectile::hasHitBoss(){
+    if (gameObject.IsCollide(Boss::getInstance()->gameObject)){
+        Boss::getInstance()->GetDamage(5);
+    }
+}
+bool PlayerProjectile::hasHitShield(){
+    for(auto ob : Boss::getInstance()->obstacles){
+        if (ob->gameObject.IsCollide(gameObject)){
+            Boss::getInstance()->GetDamage(ob->index);
+            return true;
+        }
     }
     return false;
 }

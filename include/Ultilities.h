@@ -8,12 +8,14 @@ enum class Direction { LEFT, RIGHT, UP, DOWN, NONE };
 
 class GameConfig {
 public:
-    static constexpr const int SCREEN_WIDTH = 800;
+    static constexpr int SCREEN_WIDTH = 800;
     static constexpr int SCREEN_HEIGHT = 600;
     static constexpr int FPS = 60;
-    static constexpr bool IS_DEBUG_MODE = false;
+    static constexpr bool IS_DEBUG_MODE = false, IS_LOSE = false;
     static constexpr int SHIELD_ROTATION_DELAY = 200; //miliseconds
-    static SDL_Renderer* renderer;
+    static bool running ;
+    static SDL_Event e;
+    static SDL_Renderer *renderer;
 };
 
 template <typename T>
@@ -82,6 +84,12 @@ struct Vector {
         float mag = magnitude();
         return (mag > 0) ? Vector(x / mag, y / mag) : Vector(0, 0);
     }
+    Vector Lerp(const Vector& end, float t) {
+        Vector result;
+        result.x = x + (end.x - x) * t;
+        result.y = y + (end.y - y) * t;
+        return result;
+    }
     float GetDistance(const Vector& other) const{
         return sqrt((x-other.x)*(x-other.x) + (y-other.y)*(y-other.y));
     }
@@ -97,56 +105,58 @@ struct Color{
     }
 };
 
-struct GameObject{
+struct GameObject {
     Vector position;
     Vector direction;
     Color color;
-    string mainTextureName;
-    vector<string> textureNameList;
+    std::string mainTextureName;
+    std::vector<std::string> textureNameList;
     int width, height;
-    
-    GameObject(int x, int y){
-        position.x = x;
-        position.y = y;
-    }
-    GameObject(int x, int y, int width, int height) : position{x, y}, width(width), height(height){
 
-    }
-    void Translate(){
-        position.x += direction.x;
-        position.y += direction.y;
-    }
-    void SetAttribute(int x, int y, int width, int height){
-        position = {x, y};
-        this->width = width;
-        this->height = height;
-    }
-    void RectRender(){
-        SDL_SetRenderDrawColor(GameConfig::renderer, color.r, color.g, color.b, color.a);
-        SDL_RenderFillRect(GameConfig::renderer, GetRect());
-    }
-    void TextureRender(){
-        TextureRender(mainTextureName);
-    }
-    void TextureRender(string name){
-        SDL_Rect rect = { int(position.x) - width / 2, int(position.y) - height / 2, width, height };
-        SDL_RenderCopy(GameConfig::renderer, TextureLoader::loadTexture(name), nullptr, GetRect());
-    }
-    SDL_Rect* GetRect() {
-        SDL_Rect rect = {int(position.x) - width / 2 + ScreenShakeEffect::camera.x, int(position.y) - height / 2 + ScreenShakeEffect::camera.y, width, height};
-        return &rect;
-    }
-    bool IsCollide(Vector p){
-        return (p.x >= position.x - width / 2 && p.x <= position.x + width / 2 &&
-            p.y >= position.y - height / 2 && p.y <= position.y + height / 2);
-    }
-    friend std::ostream& operator<<(std::ostream& os, const GameObject& obj) {
-        os << "GameObject(Position: (" << obj.position.x << ", " << obj.position.y
-           << "), Size: [" << obj.width << "x" << obj.height << "] )";
-        return os;
+    GameObject(int x = 0, int y = 0);
+    GameObject(int x, int y, int width, int height);
+
+    void Translate();
+    void SetAttribute(int x, int y, int width, int height);
+    void RectRender();
+    void TextureRender();
+    void TextureRender(const std::string& name);
+    SDL_Rect GetRect();
+    bool IsCollide(Vector p);
+    bool IsCollide(GameObject& gameObject);
+    friend std::ostream& operator<<(std::ostream& os, const GameObject& obj);
+};
+struct LerpVector{
+    Vector currentPos;
+    Vector destination;
+    float smooth;
+    LerpVector(Vector currentPos, Vector destination) : currentPos(currentPos), destination(destination){}
+    //Return False if distance between currentPosition and destination is trivial
+    bool Lerping(){
+        currentPos = currentPos.Lerp(destination, smooth);
+        return currentPos.GetDistance(destination) >= 0.1f;
     }
 };
+class LerpVectorController{
+private:
+    static inline vector<pair<GameObject, LerpVector>> list;
+public:
+    static void Lerping(){
+        for(auto it = list.begin(); it != list.end();){
+            if (it->second.Lerping()){
+                it->first.position = it->second.currentPos;
+                ++it;
+            }
+            else{
+                list.erase(it);
+            }
+        }
+    }
+    static void AddLerp(GameObject &gameObject, Vector destination){
+        list.push_back({gameObject, LerpVector(gameObject.position, destination)});
+    }
 
+};
 // struct SpriteRenderer{
 //     GameObject gameObject;
 //     string textureName;

@@ -7,13 +7,13 @@
 
 class HorizontalObstacle {
 public:
-    HorizontalObstacle(float y, float speed);
-
+    HorizontalObstacle(float x, float y, float speed);
+    int index;
+    GameObject gameObject;
     void update();
     void render(SDL_Renderer* renderer);
 
 private:
-    GameObject gameObject;
     float speed;
     bool movingRight;
 };

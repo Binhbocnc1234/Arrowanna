@@ -1,6 +1,7 @@
 #include "Player.h"
+#include "GameManager.h"
 #include "Ultilities.h"
-#include "TextureLoader.h";
+#include "TextureLoader.h"
 #include <bits/stdc++.h>
 using namespace std;
 
@@ -14,11 +15,12 @@ Player::Player(int x, int y, int health)
     : health(health), 
       shieldDir(Direction::UP), oldShieldDir(Direction::UP),
       gameObject(x, y, 50, 50), 
-      shieldObject(x, y, 50, 10), oldShieldObject(x, y, 50, 10) {
+      shieldObject(x, y, 50, 10), oldShieldObject(x, y, 50, 10), projectile(0, 0, 0) {
     
     gameObject.color = Color(0, 0, 255, 255);  // Player color
     shieldObject.color = Color(255, 255, 0, 255); // Shield color
     oldShieldObject.color = Color(255, 255, 0, 255); // Old shield for fading effect
+    origin = Vector(x, y);
 
     gameObject.textureNameList = {"player", "player_hurt"};
     gameObject.mainTextureName = "player";
@@ -27,9 +29,11 @@ Player::Player(int x, int y, int health)
     } else {
         std::cerr << "Two or more instances of Player!" << std::endl;
     }
+    
 }
 
-void Player::handleEvent(SDL_Event& e) {
+void Player::HandleEvent(SDL_Event& e) {
+    cout << "Event";
     if (e.type == SDL_KEYDOWN) {
         if (!isShieldTransitioning) {  
             switch (e.key.keysym.sym) {
@@ -37,6 +41,7 @@ void Player::handleEvent(SDL_Event& e) {
                 case SDLK_s: shieldDir = Direction::DOWN; break;
                 case SDLK_a: shieldDir = Direction::LEFT; break;
                 case SDLK_d: shieldDir = Direction::RIGHT; break;
+                
                 default:
                     return;
             }
@@ -53,8 +58,16 @@ void Player::handleEvent(SDL_Event& e) {
         }
     }
 }
-
-void Player::update() {
+void Player::HandleShoot(SDL_Event& e){
+    if (e.key.keysym.sym == SDLK_SPACE){
+        Shoot();
+    }
+}
+void Player::update(){
+    updateShield();
+    updatePlayer();
+}
+void Player::updateShield() {
     Uint32 currentTime = SDL_GetTicks();
     float progress = 1.0f;
 
@@ -98,8 +111,6 @@ void Player::update() {
     oldShieldObject.SetAttribute(oldShieldPos.x, oldShieldPos.y, oldWidth, oldHeight);
     
     SDL_SetRenderDrawBlendMode(GameConfig::renderer, SDL_BLENDMODE_BLEND);
-    // Render player
-    gameObject.TextureRender();
     //Render shield
     
     if (isShieldTransitioning) {
@@ -109,19 +120,55 @@ void Player::update() {
     shieldObject.color.a = progress * 255;  // Increase opacity
     shieldObject.RectRender();
 }
-
+void Player::updatePlayer(){
+    Uint32 currentTime = SDL_GetTicks();
+    if (isHurt) {
+        Uint32 elapsed = currentTime - hurtAnimationStart;
+        if (elapsed >= HURT_ANIMATION_DURATION) {
+            isHurt = false;
+            gameObject.mainTextureName = "player";
+        } else {
+            // Toggle between textures every HURT_ANIMATION_DELAY
+            bool flash = (elapsed / HURT_ANIMATION_DELAY) % 2 == 0;
+            gameObject.mainTextureName = flash ? "player_hurt" : "player";
+        }
+    }
+    // Existing shield update logic...
+    gameObject.TextureRender();
+}
 void Player::takeDamage(int projectileDir) {
     if (static_cast<int>(shieldDir) != projectileDir) {
+        
+        //ScreenShakeEffect::StartScreenShake();
         health--;
         std::cout << "Hit! Health: " << health << std::endl;
         if (health <= 0) {
-            std::cout << "Game Over!" << std::endl;
+            GameManager::getInstance()->Lose();
+        }
+        else{
+            isHurt = true;
         }
     } else {
         std::cout << "Blocked!" << std::endl;
     }
 }
 
+void Player::Shoot(){
+    projectile = PlayerProjectile(gameObject.position.x, gameObject.position.y - 10, 5);
+}
+void Player::GetGoldEnergy(){
+    goldEnergy++;
+    if (goldEnergy >= Player::MAX_ENERGY){
+        GameManager::getInstance()->InPlayerTurn();
+        goldEnergy = 0;
+    }
+}
+void Player::InPlayerTurn(){
+    LerpVectorController::AddLerp(gameObject, Vector(GameConfig::SCREEN_WIDTH / 2, GameConfig::SCREEN_HEIGHT - 100));
+}
+void Player::InBossTurn(){
+    LerpVectorController::AddLerp(gameObject, origin);
+}
 bool Player::isAlive() const {
     return health > 0;
 }

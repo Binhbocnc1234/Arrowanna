@@ -1,11 +1,11 @@
 #include "HorizontalObstacle.h"
 #include "Ultilities.h"
 
-HorizontalObstacle::HorizontalObstacle(float y, float spd)
-    : speed(spd), movingRight(true), gameObject(GameConfig::SCREEN_WIDTH / 2, y) {
+HorizontalObstacle::HorizontalObstacle(float x, float y, float spd)
+    : speed(spd), movingRight(true), gameObject(x, y) {
     gameObject.color = Color(0, 255, 0, 255);
-    gameObject.width = 100;  // Large width
-    gameObject.height = 20;  // Small height
+    gameObject.width = 150;  // Large width
+    gameObject.height = 10;  // Small height
 }
 
 void HorizontalObstacle::update() {

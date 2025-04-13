@@ -35,4 +35,10 @@ public:
     bool hasHitPlayer() override;
 };
 
+class PlayerProjectile : public Projectile{
+public:
+    PlayerProjectile(int startX, int startY, float speed);
+    bool hasHitBoss();
+    bool hasHitShield() override;
+};
 #endif

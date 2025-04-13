@@ -1,6 +1,6 @@
 CXX = g++
 CXXFLAGS = -Wall -I include
-LDFLAGS = -L lib -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf -lSDL2_image
+LDFLAGS = -L lib -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf -lSDL2_image -lSDL2_mixer
 
 SRCDIR = src
 BUILDDIR = build

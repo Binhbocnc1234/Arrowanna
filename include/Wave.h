@@ -6,16 +6,18 @@
 
 class Wave {
 public:
-    Wave(int screenWidth, int screenHeight);
+    Wave();
+    Wave(int width, int height);
     void spawnProjectile();
     void update();
     void updateProjectiles();
+    void renderBoundaries();
     void renderProjectiles();
-    void checkCollisions(int playerX, int playerY, SDL_Point shieldPoint, Direction shieldDir);
+    void clearProjectiles();
 
 private:
     std::vector<Projectile*> projectiles;
-    int screenWidth, screenHeight;
+    int width, height;
     int frameCount = 0;
 };
 

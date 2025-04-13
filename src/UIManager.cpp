@@ -1,5 +1,6 @@
 #include "UIManager.h"
 #include "Ultilities.h"
+#include "Player.h"
 #include <iostream>
 
 UIManager::UIManager(SDL_Renderer* renderer) : renderer(renderer) {
@@ -18,38 +19,47 @@ UIManager::~UIManager() {
     TTF_Quit();
 }
 
-void UIManager::render(int health, int score) {
-    renderText("Health: " + std::to_string(health), 10, 10);
-    renderText("Score: " + std::to_string(score), 10, 40);
+void UIManager::render(int health, int score, int goldEnergy, int maxGoldEnergy) {
+    renderText("Health: " + std::to_string(health), 10, 10, 1.0f, Alignment::Left);
+    renderText("Score: " + std::to_string(score), 10, 40, 1.0f, Alignment::Left);
+    renderGoldEnergyBar(10, 70, goldEnergy, maxGoldEnergy);
 }
 void UIManager::renderGameOver() {
-    SDL_Color redColor = {255, 0, 0, 255};  // Red color for "YOU LOSE"
-    
-    SDL_Surface* textSurface = TTF_RenderText_Solid(font, "YOU LOSE", redColor);
-    if (!textSurface) return;
-
-    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
-    
-    // Center the text
-    int textW = textSurface->w;
-    int textH = textSurface->h;
-    SDL_Rect renderQuad = { (GameConfig::SCREEN_WIDTH - textW) / 2, (GameConfig::SCREEN_HEIGHT - textH) / 2, textW, textH };
-
-    SDL_RenderCopy(renderer, textTexture, nullptr, &renderQuad);
-    
-    SDL_FreeSurface(textSurface);
-    SDL_DestroyTexture(textTexture);
+    renderText("GAME OVER", GameConfig::SCREEN_WIDTH / 2, GameConfig::SCREEN_HEIGHT / 2, 3);
 }
-
-void UIManager::renderText(const std::string& text, int x, int y) {
+void UIManager::renderWin(){
+    renderText("GAME OVER", GameConfig::SCREEN_WIDTH / 2, GameConfig::SCREEN_HEIGHT / 2, 3);
+}
+void UIManager::renderText(const std::string& text, int x, int y, float scale, Alignment align) {
     SDL_Surface* textSurface = TTF_RenderText_Solid(font, text.c_str(), textColor);
     if (!textSurface) return;
 
     SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
-    SDL_Rect renderQuad = {x, y, textSurface->w, textSurface->h};
+    int w = textSurface->w * scale;
+    int h = textSurface->h * scale;
+    SDL_Rect renderQuad = {x - w/2, y - h/2, w, h};
+    if (align == Alignment::Left){
+        renderQuad.x = x;
+        renderQuad.y = y;
+    }
 
     SDL_RenderCopy(renderer, textTexture, nullptr, &renderQuad);
-    
     SDL_FreeSurface(textSurface);
     SDL_DestroyTexture(textTexture);
+}
+void UIManager::renderGoldEnergyBar(int x, int y, int goldEnergy, int maxEnergy) {
+    const int blockWidth = 20;
+    const int blockHeight = 20;
+    const int spacing = 5;
+
+    for (int i = 0; i < maxEnergy; ++i) {
+        SDL_Rect block = {x + i * (blockWidth + spacing), y, blockWidth, blockHeight};
+
+        if (i < goldEnergy) {
+            SDL_SetRenderDrawColor(renderer, 255, 215, 0, 255); // Gold
+        } else {
+            SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255); // Grey
+        }
+        SDL_RenderFillRect(renderer, &block);
+    }
 }

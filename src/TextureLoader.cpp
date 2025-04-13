@@ -1,6 +1,6 @@
 #include "TextureLoader.h"
 #include "Ultilities.h"
-#include <iostream>
+#include <bits/stdc++.h>
 #include <SDL2/SDL_image.h>
 using namespace std;
 
@@ -34,7 +34,7 @@ SDL_Texture* TextureLoader::loadTexture(std::string filename) {
     return nullptr;
 }
 
-std::vector<SDL_Texture*> TextureLoader::loadSprites(std::string filename, int count, int width, int height) {
+vector<SDL_Texture*> TextureLoader::loadSprites(std::string filename, int count, int width, int height) {
     std::vector<SDL_Texture*> sprites;
     SDL_Renderer* renderer = GameConfig::renderer;
     std::string filepath = "Assets/Images/" + filename + ".png";
