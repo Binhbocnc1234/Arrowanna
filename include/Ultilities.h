@@ -11,9 +11,10 @@ public:
     static constexpr int SCREEN_WIDTH = 800;
     static constexpr int SCREEN_HEIGHT = 600;
     static constexpr int FPS = 60;
-    static constexpr bool IS_DEBUG_MODE = false, IS_LOSE = false;
+    static constexpr bool IS_DEBUG_MODE = true, IS_LOSE = false;
     static constexpr int SHIELD_ROTATION_DELAY = 200; //miliseconds
-    static bool running ;
+    static int MAX_ENERGY;
+    static bool running;
     static SDL_Event e;
     static SDL_Renderer *renderer;
 };
@@ -124,13 +125,14 @@ struct GameObject {
     SDL_Rect GetRect();
     bool IsCollide(Vector p);
     bool IsCollide(GameObject& gameObject);
+    bool IsOutOfScreen();
     friend std::ostream& operator<<(std::ostream& os, const GameObject& obj);
 };
 struct LerpVector{
     Vector currentPos;
     Vector destination;
     float smooth;
-    LerpVector(Vector currentPos, Vector destination) : currentPos(currentPos), destination(destination){}
+    LerpVector(Vector currentPos, Vector destination, float smooth) : currentPos(currentPos), destination(destination), smooth(smooth){}
     //Return False if distance between currentPosition and destination is trivial
     bool Lerping(){
         currentPos = currentPos.Lerp(destination, smooth);
@@ -139,23 +141,23 @@ struct LerpVector{
 };
 class LerpVectorController{
 private:
-    static inline vector<pair<GameObject, LerpVector>> list;
+    static inline vector<pair<GameObject*, LerpVector>> list;
 public:
     static void Lerping(){
         for(auto it = list.begin(); it != list.end();){
+            // Fix: update GameObject position before checking distance
+            if (it->first) it->first->position = it->second.currentPos;
             if (it->second.Lerping()){
-                it->first.position = it->second.currentPos;
                 ++it;
             }
             else{
-                list.erase(it);
+                it = list.erase(it);
             }
         }
     }
     static void AddLerp(GameObject &gameObject, Vector destination){
-        list.push_back({gameObject, LerpVector(gameObject.position, destination)});
+        list.push_back({&gameObject, LerpVector(gameObject.position, destination, 0.2f)});
     }
-
 };
 // struct SpriteRenderer{
 //     GameObject gameObject;

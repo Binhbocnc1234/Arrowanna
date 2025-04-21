@@ -2,6 +2,7 @@
 #include "GameManager.h"
 #include "Ultilities.h"
 #include "TextureLoader.h"
+#include "MusicAndSoundLoader.h"
 #include <bits/stdc++.h>
 using namespace std;
 
@@ -12,7 +13,7 @@ Player* Player::getInstance(){
 }
 
 Player::Player(int x, int y, int health) 
-    : health(health), 
+    : health(health), goldEnergy(0),
       shieldDir(Direction::UP), oldShieldDir(Direction::UP),
       gameObject(x, y, 50, 50), 
       shieldObject(x, y, 50, 10), oldShieldObject(x, y, 50, 10), projectile(0, 0, 0) {
@@ -21,6 +22,7 @@ Player::Player(int x, int y, int health)
     shieldObject.color = Color(255, 255, 0, 255); // Shield color
     oldShieldObject.color = Color(255, 255, 0, 255); // Old shield for fading effect
     origin = Vector(x, y);
+    projectile.isAlive = false;
 
     gameObject.textureNameList = {"player", "player_hurt"};
     gameObject.mainTextureName = "player";
@@ -33,7 +35,6 @@ Player::Player(int x, int y, int health)
 }
 
 void Player::HandleEvent(SDL_Event& e) {
-    cout << "Event";
     if (e.type == SDL_KEYDOWN) {
         if (!isShieldTransitioning) {  
             switch (e.key.keysym.sym) {
@@ -60,12 +61,18 @@ void Player::HandleEvent(SDL_Event& e) {
 }
 void Player::HandleShoot(SDL_Event& e){
     if (e.key.keysym.sym == SDLK_SPACE){
+        cout << "Player shoot\n";
         Shoot();
     }
 }
 void Player::update(){
     updateShield();
     updatePlayer();
+    // // Handle deferred turn switch
+    // if (pendingPlayerTurn) {
+    //     GameManager::getInstance()->InPlayerTurn();
+    //     pendingPlayerTurn = false;
+    // }
 }
 void Player::updateShield() {
     Uint32 currentTime = SDL_GetTicks();
@@ -134,7 +141,28 @@ void Player::updatePlayer(){
         }
     }
     // Existing shield update logic...
+    
     gameObject.TextureRender();
+}
+void Player::updateProjectile(){
+    switch(playerTurnState){
+        case PlayerTurnState::WaitingToFire:
+            // Do nothing, waiting for player to shoot
+            break;
+        case PlayerTurnState::Released:
+            projectile.update();
+            projectile.render(GameConfig::renderer);
+            // If projectile is destroyed, set state
+            if (!projectile.isAlive) {
+                SetPlayerTurnState(PlayerTurnState::ProjectileDestroyed);
+            }
+            break;
+        case PlayerTurnState::ProjectileDestroyed:
+            if (SDL_GetTicks() - projDestroyedTime >= 1500){
+                GameManager::getInstance()->InBossTurn();
+            }
+            break;
+    }
 }
 void Player::takeDamage(int projectileDir) {
     if (static_cast<int>(shieldDir) != projectileDir) {
@@ -147,28 +175,60 @@ void Player::takeDamage(int projectileDir) {
         }
         else{
             isHurt = true;
+            hurtAnimationStart = SDL_GetTicks(); // <-- Add this line
         }
     } else {
         std::cout << "Blocked!" << std::endl;
+        PlayBlockSound();
     }
 }
 
-void Player::Shoot(){
-    projectile = PlayerProjectile(gameObject.position.x, gameObject.position.y - 10, 5);
+void Player::Shoot() {
+    // Only shoot if there is no active projectile
+    if (!projectile.isAlive) {
+        projectile = PlayerProjectile(gameObject.position.x, gameObject.position.y - 10, 7); // speed = 10
+        projectile.isAlive = true;
+        SetPlayerTurnState(PlayerTurnState::Released);
+    }
 }
-void Player::GetGoldEnergy(){
+void Player::SetPlayerTurnState(PlayerTurnState state){
+    playerTurnState = state;
+    switch(state){
+        case PlayerTurnState::ProjectileDestroyed:
+            projDestroyedTime = SDL_GetTicks();
+            break;
+        default:
+            break;
+    }
+}
+void Player::ReceiveGoldEnergy(){
     goldEnergy++;
-    if (goldEnergy >= Player::MAX_ENERGY){
+    if (goldEnergy >= GameConfig::MAX_ENERGY){
+        //pendingPlayerTurn = true; // <-- Set flag instead of calling InPlayerTurn directly
         GameManager::getInstance()->InPlayerTurn();
         goldEnergy = 0;
     }
+    PlayGetEnergySound();
 }
+int Player::GetGoldEnergy() { return goldEnergy; }
 void Player::InPlayerTurn(){
+    SetPlayerTurnState(PlayerTurnState::WaitingToFire);
     LerpVectorController::AddLerp(gameObject, Vector(GameConfig::SCREEN_WIDTH / 2, GameConfig::SCREEN_HEIGHT - 100));
 }
 void Player::InBossTurn(){
     LerpVectorController::AddLerp(gameObject, origin);
+    
 }
 bool Player::isAlive() const {
     return health > 0;
+}
+
+void Player::PlayGetEnergySound() {
+    Mix_Chunk* chunk = MusicAndSoundLoader::LoadSound("get-energy");
+    if (chunk) Mix_PlayChannel(-1, chunk, 0);
+}
+
+void Player::PlayBlockSound() {
+    Mix_Chunk* chunk = MusicAndSoundLoader::LoadSound("successfully-block-enemy-projectile");
+    if (chunk) Mix_PlayChannel(-1, chunk, 0);
 }

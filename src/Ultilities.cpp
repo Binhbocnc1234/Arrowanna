@@ -3,6 +3,7 @@
 
 SDL_Renderer *GameConfig::renderer = nullptr;
 bool GameConfig::running = true;
+int GameConfig::MAX_ENERGY = 3;
 SDL_Event GameConfig::e = SDL_Event{};
 
 SDL_Point getRectCenter(const SDL_Rect& rect) {
@@ -86,6 +87,11 @@ bool GameObject::IsCollide(GameObject& other){
     SDL_Rect a = this->GetRect();
     SDL_Rect b = other.GetRect();
     return SDL_HasIntersection(&a, &b) == SDL_TRUE;
+}
+bool GameObject::IsOutOfScreen() {
+    SDL_Rect rect = GetRect();
+    return (rect.x + rect.w < 0 || rect.x > GameConfig::SCREEN_WIDTH ||
+            rect.y + rect.h < 0 || rect.y > GameConfig::SCREEN_HEIGHT);
 }
 std::ostream& operator<<(std::ostream& os, const GameObject& obj) {
     os << "GameObject(Position: (" << obj.position.x << ", " << obj.position.y

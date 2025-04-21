@@ -1,6 +1,7 @@
 #include "UIManager.h"
 #include "Ultilities.h"
 #include "Player.h"
+#include "Boss.h"
 #include <iostream>
 
 UIManager::UIManager(SDL_Renderer* renderer) : renderer(renderer) {
@@ -23,13 +24,17 @@ void UIManager::render(int health, int score, int goldEnergy, int maxGoldEnergy)
     renderText("Health: " + std::to_string(health), 10, 10, 1.0f, Alignment::Left);
     renderText("Score: " + std::to_string(score), 10, 40, 1.0f, Alignment::Left);
     renderGoldEnergyBar(10, 70, goldEnergy, maxGoldEnergy);
+    RenderBossHealthBar();
 }
+
 void UIManager::renderGameOver() {
     renderText("GAME OVER", GameConfig::SCREEN_WIDTH / 2, GameConfig::SCREEN_HEIGHT / 2, 3);
 }
+
 void UIManager::renderWin(){
     renderText("GAME OVER", GameConfig::SCREEN_WIDTH / 2, GameConfig::SCREEN_HEIGHT / 2, 3);
 }
+
 void UIManager::renderText(const std::string& text, int x, int y, float scale, Alignment align) {
     SDL_Surface* textSurface = TTF_RenderText_Solid(font, text.c_str(), textColor);
     if (!textSurface) return;
@@ -47,6 +52,7 @@ void UIManager::renderText(const std::string& text, int x, int y, float scale, A
     SDL_FreeSurface(textSurface);
     SDL_DestroyTexture(textTexture);
 }
+
 void UIManager::renderGoldEnergyBar(int x, int y, int goldEnergy, int maxEnergy) {
     const int blockWidth = 20;
     const int blockHeight = 20;
@@ -62,4 +68,33 @@ void UIManager::renderGoldEnergyBar(int x, int y, int goldEnergy, int maxEnergy)
         }
         SDL_RenderFillRect(renderer, &block);
     }
+}
+
+void UIManager::RenderBossHealthBar() {
+    Boss* boss = Boss::getInstance();
+    if (!boss) return;
+
+    int maxHealth = boss->maxHealth;
+    int currentHealth = boss->GetHealth();
+
+    // Bar dimensions and position
+    int barWidth = 300;
+    int barHeight = 12; // Thinner bar
+    int x = (GameConfig::SCREEN_WIDTH - barWidth) / 2;
+    int y = 20; // Lower y coordinate (higher up on screen)
+
+    // Background (gray)
+    SDL_Rect bgRect = { x, y, barWidth, barHeight };
+    SDL_SetRenderDrawColor(GameConfig::renderer, 80, 80, 80, 255);
+    SDL_RenderFillRect(GameConfig::renderer, &bgRect);
+
+    // Health (red)
+    int healthWidth = static_cast<int>((currentHealth / (float)maxHealth) * barWidth);
+    SDL_Rect healthRect = { x, y, healthWidth, barHeight };
+    SDL_SetRenderDrawColor(GameConfig::renderer, 200, 40, 40, 255);
+    SDL_RenderFillRect(GameConfig::renderer, &healthRect);
+
+    // Optional: border
+    SDL_SetRenderDrawColor(GameConfig::renderer, 255, 255, 255, 255);
+    SDL_RenderDrawRect(GameConfig::renderer, &bgRect);
 }

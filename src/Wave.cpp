@@ -7,42 +7,103 @@ using namespace std;
 Wave::Wave(){
     width = GameConfig::SCREEN_WIDTH;
     height = GameConfig::SCREEN_HEIGHT;
+    updateModeSettings();
 }
 Wave::Wave(int width, int height) : width(width), height(height){
-
+    updateModeSettings();
 }
+
+void Wave::setMode(WaveMode newMode) {
+    mode = newMode;
+    updateModeSettings();
+}
+
+WaveMode Wave::getMode() const {
+    mode;
+}
+
+void Wave::updateModeSettings() {
+    switch (mode) {
+        case WaveMode::NORMAL:
+            spawnDelay = 60;
+            projectileSpeed = 3.0f;
+            break;
+        case WaveMode::HYPED:
+            spawnDelay = 80; // Longer delay
+            projectileSpeed = 7.0f; // Faster
+            break;
+        case WaveMode::SLOWMOTION:
+            spawnDelay = 40; // Shorter delay
+            projectileSpeed = 1.5f; // Slower
+            break;
+        case WaveMode::TRICKY_ONLY:
+            spawnDelay = 70;
+            projectileSpeed = 4.0f;
+            break;
+    }
+    // Reset mode timer when mode changes
+    modeTimer = 0;
+}
+
 void Wave::spawnProjectile() {
     int randDir = rand() % 4;
     Direction dir = static_cast<Direction>(randDir);
-    float speed = rand() % (1) + 3;
+    float speed = projectileSpeed;
+
+    // Calculate wave boundaries
+    int left = (GameConfig::SCREEN_WIDTH - width) / 2;
+    int right = left + width;
+    int top = (GameConfig::SCREEN_HEIGHT - height) / 2;
+    int bottom = top + height;
 
     int startX, startY;
     switch(dir){
         case Direction::LEFT:
-            startX = 0;
+            startX = left;
             startY = Player::getInstance()->gameObject.position.y;
+            // Clamp Y inside boundaries
+            if (startY < top) startY = top;
+            if (startY > bottom) startY = bottom;
             break;
         case Direction::RIGHT:
-            startX = width;
+            startX = right;
             startY = Player::getInstance()->gameObject.position.y;
+            if (startY < top) startY = top;
+            if (startY > bottom) startY = bottom;
             break;
         case Direction::UP:
             startX = Player::getInstance()->gameObject.position.x;
-            startY = 0;
+            startY = top;
+            if (startX < left) startX = left;
+            if (startX > right) startX = right;
             break;
         case Direction::DOWN:
             startX = Player::getInstance()->gameObject.position.x;
-            startY = height;
-        default:
+            startY = bottom;
+            if (startX < left) startX = left;
+            if (startX > right) startX = right;
             break;
+        default:
+            startX = left; startY = top; break;
     }
-    int type = rand() % 6;
+
     Projectile* projectile;
-    if (type <= 4){
-        projectile = new EnemyProjectile(startX, startY, dir, speed);
-    }
-    else{
-        projectile = new BuffProjectile(startX, startY, dir, speed);
+    if (mode == WaveMode::TRICKY_ONLY) {
+        projectile = new TrickyProjectile(startX, startY, dir, speed);
+    } else {
+        int type = rand() % 11; // 0-5: Enemy, 6-7: Buff, 8: Health, 9: Tricky
+        if (type <= 6){
+            projectile = new EnemyProjectile(startX, startY, dir, speed);
+        }
+        else if (type <= 8){
+            projectile = new BuffProjectile(startX, startY, dir, speed);
+        }
+        else if (type <= 9){
+            projectile = new HealthProjectile(startX, startY, dir, speed);
+        }
+        else { // type == 10
+            projectile = new TrickyProjectile(startX, startY, dir, speed);
+        }
     }
     projectiles.push_back(projectile);
     cout << projectiles.size() << '\n';
@@ -51,7 +112,14 @@ void Wave::spawnProjectile() {
 void Wave::update(){
     ++frameCount;
 
-    if (frameCount >= 60){
+    // Mode timer logic
+    ++modeTimer;
+    if (modeTimer >= modeDuration) {
+        modeTimer = 0;
+        nextMode();
+    }
+
+    if (frameCount >= spawnDelay){
         frameCount = 0;
         cout << "Spawn\n";
         spawnProjectile();
@@ -62,12 +130,10 @@ void Wave::update(){
 
 void Wave::updateProjectiles() {
     for (auto it = projectiles.begin(); it != projectiles.end(); ) {
-        (*it)->update();  // Dereference pointer
-
-        if (!(*it)->isAlive) {  // Check isAlive
-            cout << "Projectile destroyed\n";
-            delete *it;         // Free memory
-            it = projectiles.erase(it);  // Erase from vector
+        (*it)->update();
+        if (!(*it)->isAlive) {
+            delete *it;
+            it = projectiles.erase(it);
         } else {
             ++it;
         }
@@ -111,5 +177,26 @@ void Wave::renderBoundaries() {
 }
 
 void Wave::clearProjectiles(){
+    for (auto* p : projectiles) {
+        delete p;
+    }
     projectiles.clear();
+}
+
+// Add helper to cycle to the next mode
+void Wave::nextMode() {
+    switch (mode) {
+        case WaveMode::NORMAL:
+            setMode(WaveMode::HYPED);
+            break;
+        case WaveMode::HYPED:
+            setMode(WaveMode::SLOWMOTION);
+            break;
+        case WaveMode::SLOWMOTION:
+            setMode(WaveMode::NORMAL);
+            break;
+        case WaveMode::TRICKY_ONLY:
+            setMode(WaveMode::NORMAL);
+            break;
+    }
 }

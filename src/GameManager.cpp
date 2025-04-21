@@ -11,7 +11,7 @@ GameManager* GameManager::getInstance(){
     return instance;
 }
 GameManager::GameManager() : gameState(GameState::BossTurn),
-    player(GameConfig::SCREEN_WIDTH / 2, GameConfig::SCREEN_HEIGHT / 2 + 60, 3),
+    player(GameConfig::SCREEN_WIDTH / 2, GameConfig::SCREEN_HEIGHT / 2 + 20, 3),
     boss(GameConfig::SCREEN_WIDTH/2, 60, 100),
     m_UIManager(GameConfig::renderer)
 {
@@ -30,13 +30,13 @@ void GameManager::Update(){
             boss.update();
             player.updatePlayer();
             player.updateShield();
-            player.HandleEvent(GameConfig::e);
-            m_UIManager.render(player.health, score, player.goldEnergy, Player::MAX_ENERGY);
+            m_UIManager.render(player.health, score, player.GetGoldEnergy(), GameConfig::MAX_ENERGY);
             break;
         case GameState::PlayerTurn:
             boss.update();
             player.updatePlayer();
-            player.HandleShoot(GameConfig::e);
+            player.updateProjectile();
+            m_UIManager.render(player.health, score, player.GetGoldEnergy(), GameConfig::MAX_ENERGY);
             break;
         case GameState::Lose:
             m_UIManager.renderGameOver();
@@ -44,7 +44,6 @@ void GameManager::Update(){
             if (currentTime - gameOverStart >= 3000){
                 GameConfig::running = false;
             }
-
             break;
         case GameState::Win:
             m_UIManager.renderWin();
@@ -55,14 +54,35 @@ void GameManager::Update(){
             break;
     }
 }
+void GameManager::ProcessInput(SDL_Event e)
+{
+    if (GameConfig::e.type == SDL_QUIT) {
+        GameConfig::running = false;
+    }
+
+    // Delegate to player input
+    switch (gameState) {
+        case GameState::BossTurn:
+            player.HandleEvent(GameConfig::e);
+            break;
+
+        case GameState::PlayerTurn:
+            player.HandleShoot(GameConfig::e);
+            break;
+
+        default:
+            break;
+    }
+}
 
 void GameManager::InPlayerTurn(){
-    cout << "Player turn\n";
+
+    ChangeGameState(GameState::PlayerTurn);
     player.InPlayerTurn();
     boss.InPlayerTurn();
 }
 void GameManager::InBossTurn(){
-    cout << "Boss turn\n";
+    ChangeGameState(GameState::BossTurn);
     player.InBossTurn();
     boss.InBossTurn();
 }
@@ -72,6 +92,7 @@ void GameManager::Win(){
 
 }
 void GameManager::Lose(){
+    gameOverStart = SDL_GetTicks64();
     ChangeGameState(GameState::Lose);
 }
 void GameManager::ChangeGameState(GameState state){

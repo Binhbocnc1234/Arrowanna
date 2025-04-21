@@ -16,6 +16,7 @@ public:
     static GameManager *getInstance();
     GameManager();
     void Update();
+    void ProcessInput(SDL_Event e);
     void InPlayerTurn();
     void InBossTurn();
     void Win();

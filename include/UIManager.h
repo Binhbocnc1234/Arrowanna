@@ -20,6 +20,7 @@ public:
     void renderGameOver();
     void renderWin();
     void renderGoldEnergyBar(int x, int y, int goldEnergy, int maxEnergy);
+    void RenderBossHealthBar();
 
 private:
     SDL_Renderer* renderer;
