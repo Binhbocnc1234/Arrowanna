@@ -27,15 +27,15 @@ Objective: Drain boss's health to zero to win the battle
 ## 🧩 Game Elements
 
 ### 🧠 Boss
-
+![Image](https://github.com/user-attachments/assets/cbcb5f52-9554-4cd0-8330-da237b7dd87d)
 - **BossTurn**: Attacks the player with a series of projectiles.
 - **PlayerTurn**: Defends itself with 4 flipping shields that distract the player.
 
-### 🔥 Laser
+### 🔥 Dread-Eye
+![Image](https://github.com/user-attachments/assets/43476ab2-cd74-4178-a098-ec85be2c68fa)
+A special creature controlled by the Boss, activated when Boss health drops below half.
 
-A special attack tool used by the Boss, activated when Boss health drops below half.
-
-- Every **6 seconds**, a Laser attack occurs.
+- Every **6 seconds**, Dread-Eye releases a Laser attack.
 - Laser goes through 4 states:
 
 | State        | Description                                                                 |
@@ -48,6 +48,7 @@ A special attack tool used by the Boss, activated when Boss health drops below h
 ---
 
 ## 🌊 Wave
+A class to control Projectiles
 
 As Boss HP drops, the play area gets narrower — arrows spawn closer to the player, requiring faster reflexes.
 
