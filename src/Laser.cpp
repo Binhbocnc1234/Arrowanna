@@ -3,14 +3,13 @@
 #include "TextureLoader.h"
 #include <algorithm>
 
-Laser::Laser(Direction lane, Uint32 chargeTime, Uint32 fireTime, Uint32 collapseTime)
-    : lane(lane), chargeTime(chargeTime), fireTime(fireTime), collapseTime(collapseTime)
+Laser::Laser(Direction lane)
+    : lane(lane)
 {
-    maxWidth = 80.0f;
-    color = {255, 240, 240, 220};
+    maxWidth = 50.0f;
+    color = {255, 240, 240, 90};
     state = LaserState::Inactive;
     laserTexture = TextureLoader::loadTexture("Dread-eye");
-    damageDealt = false;
 }
 
 void Laser::activate(Direction lane) {
@@ -18,7 +17,8 @@ void Laser::activate(Direction lane) {
     state = LaserState::Charging;
     startTime = SDL_GetTicks();
     width = 0.0f;
-    damageDealt = false;
+    lastDamageTime = 0;
+    damageFrame = false;
 }
 
 void Laser::deactivate() {
@@ -37,13 +37,16 @@ void Laser::update() {
     if (state == LaserState::Charging) {
         float t = std::min(1.0f, elapsed / float(chargeTime));
         width = 10.0f + (maxWidth - 10.0f) * t;
+        color = {255, 240, 240, 90}; // Trắng pha đỏ, alpha 90
         if (elapsed >= chargeTime) {
             state = LaserState::Firing;
             startTime = now;
-            damageDealt = false;
+            lastDamageTime = now;
+            damageFrame = false;
         }
     } else if (state == LaserState::Firing) {
         width = maxWidth;
+        color = {200, 40, 40, 180}; // Đỏ, alpha 180
         if (elapsed >= fireTime) {
             state = LaserState::Collapsing;
             startTime = now;
@@ -51,6 +54,7 @@ void Laser::update() {
     } else if (state == LaserState::Collapsing) {
         float t = std::min(1.0f, elapsed / float(collapseTime));
         width = maxWidth * (1.0f - t);
+        color = {255, 240, 240, 90};
         if (width < 2.0f) width = 0.0f;
         if (elapsed >= collapseTime) {
             state = LaserState::Inactive;
@@ -102,22 +106,11 @@ void Laser::render(SDL_Renderer* renderer) {
         SDL_RenderCopy(renderer, laserTexture, nullptr, &eyeRect);
 }
 
-bool Laser::checkBlock() {
-    if (state != LaserState::Firing) return false;
-    Player* player = Player::getInstance();
-    return (player->shieldDir == lane);
-}
-
-bool Laser::checkHit() {
-    if (state != LaserState::Firing) return false;
-    Player* player = Player::getInstance();
-    return (player->shieldDir != lane);
-}
-
 bool Laser::shouldDealDamage() {
-    // Only return true on the first call in Firing state
-    if (state == LaserState::Firing && !damageDealt) {
-        damageDealt = true;
+    if (state != LaserState::Firing) return false;
+    Uint32 now = SDL_GetTicks();
+    if (lastDamageTime == 0 || now - lastDamageTime >= damageInterval) {
+        lastDamageTime = now;
         return true;
     }
     return false;

@@ -108,7 +108,10 @@ void Wave::spawnProjectile() {
     projectiles.push_back(projectile);
     cout << projectiles.size() << '\n';
 }
-
+void Wave::SetSize(int w, int h){
+    width = w;
+    height = h;
+}
 void Wave::update(){
     ++frameCount;
 

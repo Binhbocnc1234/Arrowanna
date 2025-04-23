@@ -1,0 +1,83 @@
+## **Code structure**
+Note: all functions and attributes listed below are public
+
+- **Player**
+  - Attributes: `gameObject`, `shieldDir`, `projectile`, `health`, `goldEnergy`, etc.
+  - Methods:
+    - `update()`
+    - `HandleEvent(SDL_Event&)`
+    - `HandleShoot(SDL_Event&)`
+    - `takeDamage(int)`
+    - `ReceiveGoldEnergy()`
+    - `Shoot()`
+    - `InPlayerTurn()`
+    - `InBossTurn()`
+    - `isAlive()`
+    - `PlayGetEnergySound()`
+    - `PlayBlockSound()`
+
+- **Boss**
+  - Attributes: `gameObject`, `obstacles`, `maxHealth`, `health`, etc.
+  - Methods:
+    - `update()`
+    - `renderBoss(SDL_Renderer*)`
+    - `InPlayerTurn()`
+    - `InBossTurn()`
+    - `GetHealth()`
+    - `TakeDamage(int)`
+
+- **Wave**
+  - Attributes: `projectiles`, `width`, `height`, etc.
+  - Methods:
+    - `update()`
+    - `spawnProjectile()`
+    - `updateProjectiles()`
+    - `renderBoundaries()`
+    - `renderProjectiles()`
+    - `clearProjectiles()`
+    - `setMode(WaveMode)`
+    - `getMode()`
+
+- **Projectile**
+  - Attributes: `gameObject`, `direction`, `speed`, `isAlive`
+  - Methods:
+    - `update()`
+    - `render(SDL_Renderer*)`
+    - `hasHitBoss()`
+    - `hasHitPlayer()`
+    - `hasHitShield()`
+    - `isOffScreen()`
+
+- **Explosion**
+  - Attributes: `center`, `particles`
+  - Methods:
+    - `update(float dt)`
+    - `render(SDL_Renderer*)`
+    - `isAlive()`
+
+- **Particle**
+  - Attributes: `position`, `velocity`, `color`, `lifetime`, `age`, `gravity`, `size`
+  - Methods:
+    - `update(float dt)`
+    - `render(SDL_Renderer*)`
+    - `isAlive()`
+
+- **GameManager**
+  - Attributes: `score`, `gameState`, `player`, `boss`, `m_UIManager`
+  - Methods:
+    - `Update()`
+    - `ProcessInput(SDL_Event)`
+    - `InPlayerTurn()`
+    - `InBossTurn()`
+    - `Win()`
+    - `Lose()`
+    - `ChangeGameState(GameState)`
+    - `HandleEvent(SDL_Event)`
+
+- **UIManager**
+  - Methods:
+    - `render(int health, int score, int goldEnergy, int maxGoldEnergy)`
+    - `renderGameOver()`
+    - `renderWin()`
+    - `renderGoldEnergyBar(int x, int y, int goldEnergy, int maxEnergy)`
+    - `RenderBossHealthBar()`

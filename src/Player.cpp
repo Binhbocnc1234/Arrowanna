@@ -164,11 +164,11 @@ void Player::updateProjectile(){
             break;
     }
 }
-void Player::takeDamage(int projectileDir) {
+void Player::takeDamage(int projectileDir, int damage) {
     if (static_cast<int>(shieldDir) != projectileDir) {
         
         //ScreenShakeEffect::StartScreenShake();
-        health--;
+        health -= damage;
         std::cout << "Hit! Health: " << health << std::endl;
         if (health <= 0) {
             GameManager::getInstance()->Lose();

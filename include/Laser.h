@@ -11,32 +11,35 @@ enum class LaserState {
 
 class Laser {
 public:
-    Laser(Direction lane, Uint32 chargeTime = 1200, Uint32 fireTime = 600, Uint32 collapseTime = 400);
+    Laser(Direction lane);
     void update();
     void render(SDL_Renderer* renderer);
     bool isActive() const;
-    bool checkBlock();
-    bool checkHit();
-    bool shouldDealDamage();
-
     void activate(Direction lane);
     void deactivate();
 
     LaserState getState() const { return state; }
     Direction getLane() const { return lane; }
-    void setColor(SDL_Color c) { color = c; }
-    void setMaxWidth(float w) { maxWidth = w; }
+
+    // Gây sát thương, trả về true nếu đến thời điểm gây damage
+    bool shouldDealDamage();
 
 private:
     Direction lane;
     LaserState state = LaserState::Inactive;
     Uint32 startTime = 0;
-    Uint32 chargeTime, fireTime, collapseTime;
     float width = 0.0f;
-    float maxWidth = 80.0f;
-    SDL_Color color = {255, 240, 240, 220}; // White with a bit red
-
+    float maxWidth = 50.0f; // Bằng shield
+    SDL_Color color = {255, 240, 240, 90}; // Trạng thái Charge
     SDL_Texture* laserTexture = nullptr;
-    bool damageDealt = false;
-    void renderLaser(SDL_Renderer* renderer, float width, Uint8 alpha);
+
+    // Thời gian các trạng thái (ms)
+    Uint32 chargeTime = 2000;
+    Uint32 fireTime = 750;
+    Uint32 collapseTime = 400;
+
+    // Firing damage logic
+    Uint32 lastDamageTime = 0;
+    Uint32 damageInterval = 250; // ms
+    bool damageFrame = false;
 };

@@ -7,6 +7,8 @@
 #include "UIManager.h"
 #include "GameManager.h"
 #include "Explosion.h"
+#include "Lobby.h"
+#include "MusicAndSoundLoader.h"
 
 using namespace std;
 
@@ -30,9 +32,23 @@ int main(int argc, char* argv[]) {
     if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
         std::cerr << "SDL_mixer could not initialize! SDL_mixer Error: " << Mix_GetError() << std::endl;
     }
-    Mix_Music *background_music = Mix_LoadMUS("Assets/Sounds/Undie music.mp3");
+
+    // --- LOBBY MUSIC ---
+    Mix_Music* lobby_music = MusicAndSoundLoader::LoadMusic("once-upon-a-time");
+    Mix_PlayMusic(lobby_music, -1);
+
+    // --- LOBBY ---
+    Lobby lobby(GameConfig::renderer);
+    bool startGame = false;
+    while (!startGame) {
+        startGame = lobby.updateAndRender();
+        SDL_Delay(16);
+    }
+
+    // --- SWITCH TO GAME MUSIC ---
+    Mix_Music *background_music = MusicAndSoundLoader::LoadMusic("Undie music");
     Mix_PlayMusic(background_music, -1);
-    
+
     Projectile* debugProjectile = nullptr;  // Single debug projectile
     Explosion* debugExplosion = nullptr;   // Debug explosion pointer (local to main.cpp)
 

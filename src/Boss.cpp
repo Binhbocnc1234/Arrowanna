@@ -22,6 +22,9 @@ static const int swingAmplitude = 18; // px
 static Uint32 lastLaserTime = 0;
 static const Uint32 laserInterval = 6000; // 6 seconds in ms
 
+// Add laser damage logic variable at file scope
+static Uint32 lastLaserDamageTime = 0;
+
 Boss::Boss(int x, int y, int maxHealth) : gameObject(x, y, 80, 80), health(maxHealth), maxHealth(maxHealth), 
 currentSpriteIndex(0), lastSpriteChangeTime(0), wave(GameConfig::SCREEN_WIDTH, GameConfig::SCREEN_HEIGHT), laser(nullptr) {
     TextureLoader::loadSprites("Boss", 3, 32, 32);
@@ -66,38 +69,23 @@ void Boss::update() {
 
     renderBoss(GameConfig::renderer);
 
-    // Laser attack logic: only during BossTurn and health <= half
+    // Laser xuất hiện khi máu <= nửa và chỉ trong BossTurn
     if (GameManager::getInstance()->gameState == GameState::BossTurn && health <= maxHealth / 2) {
         Uint32 now = SDL_GetTicks();
-        // Only spawn/activate laser every 6 seconds
         if ((!laser || !laser->isActive()) && (now - lastLaserTime >= laserInterval)) {
-            tryActivateLaser();
+            Direction lane = static_cast<Direction>(rand() % 4);
+            if (!laser) laser = new Laser(lane);
+            laser->activate(lane);
             lastLaserTime = now;
         }
         if (laser && laser->isActive()) {
-            // Set laser width to match shield width (50)
-            laser->setMaxWidth(50);
-
-            // Change color based on state
-            if (laser->getState() == LaserState::Firing) {
-                laser->setColor({200, 40, 40, 180}); // semi-red, more visible
-            } else {
-                laser->setColor({255, 240, 240, 90}); // light red
-            }
-
             laser->update();
             laser->render(GameConfig::renderer);
 
-            // Only deal damage once per Firing state, using Laser's logic
-            if (laser->getState() == LaserState::Firing) {
-                if (laser->checkBlock()) {
-                    Player::getInstance()->PlayBlockSound();
-                } else if (laser->checkHit() && laser->shouldDealDamage()) {
-                    Player::getInstance()->health -= 4;
-                    if (Player::getInstance()->health <= 0) {
-                        GameManager::getInstance()->Lose();
-                    }
-                }
+            // Gây damage mỗi 0.25s trong Firing
+            if (laser->getState() == LaserState::Firing && laser->shouldDealDamage()) {
+                cout << "LASSERR!";
+                Player::getInstance()->takeDamage(static_cast<int>(laser->getLane()), 3);
             }
         }
     }
@@ -133,15 +121,7 @@ void Boss::renderBoss(SDL_Renderer* renderer) {
 }
 
 void Boss::tryActivateLaser() {
-    // Only activate/reactivate if not already active
-    if (!laser) {
-        Direction lane = static_cast<Direction>(rand() % 4);
-        laser = new Laser(lane);
-        laser->activate(lane);
-    } else if (!laser->isActive()) {
-        Direction lane = static_cast<Direction>(rand() % 4);
-        laser->activate(lane);
-    }
+
 }
 
 void Boss::InPlayerTurn(){
@@ -153,7 +133,9 @@ void Boss::InPlayerTurn(){
         obstacles.push_back(ob);
         ob->index = 4 - i;
     }
+    gameObject.alpha = 255; // Boss trở lại bình thường khi vào PlayerTurn
 }
+
 void Boss::InBossTurn(){
     // Clear and delete all obstacles
     for (auto ob : obstacles) {
@@ -177,8 +159,11 @@ void Boss::InBossTurn(){
     int waveHeight = static_cast<int>(sqrt(waveArea / aspect));
 
     std::cout << "Wave area ratio: " << areaRatio << ", width: " << waveWidth << ", height: " << waveHeight << '\n';
-    wave = Wave(waveWidth, waveHeight);
+    wave.clearProjectiles();
+    wave.SetSize(waveWidth, waveHeight);
+    gameObject.alpha = 127; // Boss mờ đi khi vào BossTurn
 }
+
 void Boss::TakeDamage(int index){
     health -= index * 5;
     // Start swing effect
@@ -186,7 +171,7 @@ void Boss::TakeDamage(int index){
     // Create DamageObject at boss position
     static TTF_Font* font = nullptr;
     if (!font) font = TTF_OpenFont("Assets/RadiantKingdom-mL5eV.ttf", 36);
-    Vector pos = gameObject.position;
+    Vector pos = gameObject.position + Vector(70, 0);
     damageObjects.push_back(new DamageObject(pos, index * 5, GameConfig::renderer, font));
     if (health == 0){
         GameManager::getInstance()->Win();

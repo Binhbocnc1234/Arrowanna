@@ -4,6 +4,12 @@
 #include "Boss.h"
 #include <iostream>
 
+// Thêm biến static để lưu trạng thái thanh máu Boss
+static int lastBossHealth = 0;
+static float displayedBossHealth = 0.0f;
+static Uint32 bossHealthBarShowTime = 0;
+static const Uint32 bossHealthBarDuration = 2000; // ms
+
 UIManager::UIManager(SDL_Renderer* renderer) : renderer(renderer) {
     if (TTF_Init() == -1) {
         std::cerr << "Error initializing SDL_ttf: " << TTF_GetError() << std::endl;
@@ -28,11 +34,11 @@ void UIManager::render(int health, int score, int goldEnergy, int maxGoldEnergy)
 }
 
 void UIManager::renderGameOver() {
-    renderText("GAME OVER", GameConfig::SCREEN_WIDTH / 2, GameConfig::SCREEN_HEIGHT / 2, 3);
+    renderText("You raised your shield too late... and paid the price.", GameConfig::SCREEN_WIDTH / 2, GameConfig::SCREEN_HEIGHT / 2, 2);
 }
 
 void UIManager::renderWin(){
-    renderText("GAME OVER", GameConfig::SCREEN_WIDTH / 2, GameConfig::SCREEN_HEIGHT / 2, 3);
+    renderText("Even the Boss fall when faced with unwavering resolve.", GameConfig::SCREEN_WIDTH / 2, GameConfig::SCREEN_HEIGHT / 2, 2);
 }
 
 void UIManager::renderText(const std::string& text, int x, int y, float scale, Alignment align) {
@@ -77,11 +83,32 @@ void UIManager::RenderBossHealthBar() {
     int maxHealth = boss->maxHealth;
     int currentHealth = boss->GetHealth();
 
+    // Chỉ hiển thị khi Boss mất máu và trong 2s sau khi mất máu
+    Uint32 now = SDL_GetTicks();
+    if (currentHealth < maxHealth) {
+        if (currentHealth != lastBossHealth) {
+            bossHealthBarShowTime = now;
+            lastBossHealth = currentHealth;
+        }
+    }
+    // Nếu chưa từng mất máu hoặc đã hết thời gian hiển thị thì không render
+    if (currentHealth == maxHealth || now - bossHealthBarShowTime > bossHealthBarDuration)
+        return;
+
+    // Thanh máu giảm từ từ (lerp)
+    if (displayedBossHealth > currentHealth) {
+        float lerpSpeed = 0.08f; // càng nhỏ càng mượt
+        displayedBossHealth = displayedBossHealth * (1 - lerpSpeed) + currentHealth * lerpSpeed;
+        if (displayedBossHealth < currentHealth) displayedBossHealth = currentHealth;
+    } else {
+        displayedBossHealth = currentHealth;
+    }
+
     // Bar dimensions and position
     int barWidth = 300;
-    int barHeight = 12; // Thinner bar
+    int barHeight = 12;
     int x = (GameConfig::SCREEN_WIDTH - barWidth) / 2;
-    int y = 20; // Lower y coordinate (higher up on screen)
+    int y = 100;
 
     // Background (gray)
     SDL_Rect bgRect = { x, y, barWidth, barHeight };
@@ -89,7 +116,7 @@ void UIManager::RenderBossHealthBar() {
     SDL_RenderFillRect(GameConfig::renderer, &bgRect);
 
     // Health (red)
-    int healthWidth = static_cast<int>((currentHealth / (float)maxHealth) * barWidth);
+    int healthWidth = static_cast<int>((displayedBossHealth / (float)maxHealth) * barWidth);
     SDL_Rect healthRect = { x, y, healthWidth, barHeight };
     SDL_SetRenderDrawColor(GameConfig::renderer, 200, 40, 40, 255);
     SDL_RenderFillRect(GameConfig::renderer, &healthRect);

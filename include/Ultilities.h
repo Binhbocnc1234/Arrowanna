@@ -113,6 +113,7 @@ struct GameObject {
     std::string mainTextureName;
     std::vector<std::string> textureNameList;
     int width, height;
+    int alpha = 255; // Thêm thuộc tính alpha, mặc định 255
 
     GameObject(int x = 0, int y = 0);
     GameObject(int x, int y, int width, int height);

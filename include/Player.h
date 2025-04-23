@@ -24,7 +24,7 @@ public:
     void updateShield();
     void updateProjectile();
     void SetPlayerTurnState(PlayerTurnState state);
-    void takeDamage(int projectileDir);
+    void takeDamage(int projectileDir, int damage = 1);
     void ReceiveGoldEnergy();
     int GetGoldEnergy();
     void Shoot();

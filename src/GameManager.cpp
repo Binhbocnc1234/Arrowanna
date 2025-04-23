@@ -3,9 +3,16 @@
 #include "Projectile.h"
 #include "Boss.h"
 #include "Ultilities.h"
+#include "PauseMenu.h"
 #include <iostream>
 
 GameManager* GameManager::instance = nullptr;
+
+// Thêm biến static hoặc thành viên (nếu muốn) cho pause
+static bool isPaused = false;
+static int musicVolume = 128;
+static PauseButton pauseBtn(GameConfig::SCREEN_WIDTH - 60, 20, 40);
+static PauseMenu* pauseMenu = nullptr;
 
 GameManager* GameManager::getInstance(){
     return instance;
@@ -15,18 +22,53 @@ GameManager::GameManager() : gameState(GameState::BossTurn),
     boss(GameConfig::SCREEN_WIDTH/2, 60, 100),
     m_UIManager(GameConfig::renderer)
 {
+    InBossTurn();
     if (instance == nullptr){
         instance = this;
     }
     else{
         std::cerr << "Two or more instances of GameManager!" << std::endl;
     }
+    // Init pause menu
+    static TTF_Font* pauseFont = TTF_OpenFont("Assets/RadiantKingdom-mL5eV.ttf", 32);
+    pauseMenu = new PauseMenu(GameConfig::renderer, pauseFont);
 }
 
 void GameManager::Update(){
     Uint32 currentTime = SDL_GetTicks();
     switch(gameState){
         case GameState::BossTurn:
+            // Pause button logic
+            {
+                int mx, my;
+                Uint32 mouseState = SDL_GetMouseState(&mx, &my);
+                pauseBtn.hovered = pauseBtn.isHovered(mx, my);
+
+                // Draw pause button
+                pauseBtn.render(GameConfig::renderer);
+
+                // Handle pause click
+                static bool prevMouseDown = false;
+                bool mouseDown = mouseState & SDL_BUTTON(SDL_BUTTON_LEFT);
+                if (!isPaused && pauseBtn.isClicked(mx, my, mouseDown) && !prevMouseDown) {
+                    isPaused = true;
+                }
+                prevMouseDown = mouseDown;
+            }
+
+            if (isPaused) {
+                int result = pauseMenu->updateAndRender(musicVolume);
+                // Mix_VolumeMusic(musicVolume);
+                if (result == 0) { // Continue
+                    isPaused = false;
+                } else if (result == 1) { // Quit
+                    GameConfig::running = false;
+                }
+                // Don't update game logic when paused
+                SDL_RenderPresent(GameConfig::renderer);
+                return;
+            }
+
             boss.update();
             player.updatePlayer();
             player.updateShield();
@@ -41,14 +83,14 @@ void GameManager::Update(){
         case GameState::Lose:
             m_UIManager.renderGameOver();
             boss.update();
-            if (currentTime - gameOverStart >= 3000){
+            if (currentTime - gameOverStart >= 5000){
                 GameConfig::running = false;
             }
             break;
         case GameState::Win:
             m_UIManager.renderWin();
             player.update();
-            if (currentTime - gameOverStart >= 3000){
+            if (currentTime - gameOverStart >= 5000){
                 GameConfig::running = false;
             }
             break;

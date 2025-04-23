@@ -21,7 +21,7 @@ public:
     void renderBoundaries();
     void renderProjectiles();
     void clearProjectiles();
-
+    void SetSize(int w, int h);
     void setMode(WaveMode mode);
     WaveMode getMode() const;
 

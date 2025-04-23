@@ -44,10 +44,12 @@ void ScreenShakeEffect::UpdateScreenShake() {
 GameObject::GameObject(int x, int y) {
     position.x = x;
     position.y = y;
+    alpha = 255;
 }
 
 GameObject::GameObject(int x, int y, int width, int height)
     : position{x, y}, width(width), height(height) {
+    alpha = 255;
 }
 
 void GameObject::Translate() {
@@ -73,8 +75,14 @@ void GameObject::TextureRender() {
 
 void GameObject::TextureRender(const std::string& name) {
     SDL_Rect rect = GameObject::GetRect();
-    SDL_RenderCopy(GameConfig::renderer, TextureLoader::loadTexture(name), nullptr, &rect);
+    SDL_Texture* tex = TextureLoader::loadTexture(name);
+    if (tex) {
+        SDL_SetTextureAlphaMod(tex, alpha); // Sử dụng alpha của GameObject
+        SDL_RenderCopy(GameConfig::renderer, tex, nullptr, &rect);
+        SDL_SetTextureAlphaMod(tex, 255); // Reset về 255 để tránh ảnh hưởng các render khác
+    }
 }
+
 SDL_Rect GameObject::GetRect(){
     SDL_Rect rect = {int(position.x) - width / 2 + ScreenShakeEffect::camera.x, int(position.y) - height / 2 + ScreenShakeEffect::camera.y, width, height};
     return rect;

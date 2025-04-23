@@ -7,17 +7,44 @@
 DamageObject::DamageObject(Vector pos, int damage, SDL_Renderer* renderer, TTF_Font* font)
     : position(pos), damage(damage)
 {
-    // Create texture for damage text
-    SDL_Color color = {255, 80, 40, 255};
+    // Create texture for damage text (main: red, border: white)
+    SDL_Color borderColor = {255, 255, 255, 255}; // White border
+    SDL_Color fillColor = {255, 40, 40, 255};     // Red fill
+
     std::stringstream ss;
     ss << damage;
-    SDL_Surface* surf = TTF_RenderText_Solid(font, ss.str().c_str(), color);
-    if (surf) {
-        texture = SDL_CreateTextureFromSurface(renderer, surf);
-        texW = surf->w;
-        texH = surf->h;
-        SDL_FreeSurface(surf);
+    std::string dmgStr = ss.str();
+
+    // Render border by drawing text multiple times offset by 1px in 8 directions
+    const int borderSize = 2;
+    SDL_Surface* borderSurfaces[8] = {nullptr};
+    SDL_Surface* fillSurface = TTF_RenderText_Solid(font, dmgStr.c_str(), fillColor);
+
+    // Create a surface big enough for border + fill
+    int w = fillSurface->w + borderSize * 2;
+    int h = fillSurface->h + borderSize * 2;
+    SDL_Surface* finalSurface = SDL_CreateRGBSurface(0, w, h, 32,
+        0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
+
+    // Render border in 8 directions
+    for (int i = 0; i < 8; ++i) {
+        int dx = (i % 3) - 1;
+        int dy = (i / 3) - 1;
+        if (dx == 0 && dy == 0) continue;
+        borderSurfaces[i] = TTF_RenderText_Solid(font, dmgStr.c_str(), borderColor);
+        SDL_Rect dst = { borderSize + dx, borderSize + dy, borderSurfaces[i]->w, borderSurfaces[i]->h };
+        SDL_BlitSurface(borderSurfaces[i], nullptr, finalSurface, &dst);
+        SDL_FreeSurface(borderSurfaces[i]);
     }
+    // Render fill in center
+    SDL_Rect fillDst = { borderSize, borderSize, fillSurface->w, fillSurface->h };
+    SDL_BlitSurface(fillSurface, nullptr, finalSurface, &fillDst);
+    SDL_FreeSurface(fillSurface);
+
+    texture = SDL_CreateTextureFromSurface(renderer, finalSurface);
+    texW = finalSurface->w;
+    texH = finalSurface->h;
+    SDL_FreeSurface(finalSurface);
 }
 
 DamageObject::~DamageObject() {
@@ -45,8 +72,8 @@ void DamageObject::update() {
 void DamageObject::render(SDL_Renderer* renderer) {
     if (!texture) return;
     SDL_Rect dst;
-    dst.w = static_cast<int>(texW * scale);
-    dst.h = static_cast<int>(texH * scale);
+    dst.w = static_cast<int>(texW * scale * 1.5f); // Make it bigger
+    dst.h = static_cast<int>(texH * scale * 1.5f);
     dst.x = static_cast<int>(position.x - dst.w / 2);
     dst.y = static_cast<int>(position.y - dst.h / 2);
     SDL_SetTextureAlphaMod(texture, alpha);
